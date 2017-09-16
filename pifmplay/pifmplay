@@ -10,13 +10,32 @@
 # sudo sh fmplay.sh "../sounds/Daft punk/Daft Punk - One More Time.mp3" 91.3
 
 # Variables:
+
+#first default the freq, but overwrite if needed (see below)
+frequency=91.3
+#shuffle defaults to false but is set to true if found in params
+shuffle=false
+
 # if there is a second parameter, use it as frequency instead.
-if [ $# -eq 2 ]; then
-  frequency=$2
+if [ $# -ge 2 ]; then
+
+# make sure the second parameter isnt command to shuffle, if it is, use default freq
+if [ "$2" = "s" ]; then
+  shuffle=true
+#echo "Shuffling Music"
 else
-  # Default frequency, you can change it if you want
-  frequency=91.3
+ frequency=$2
 fi
+fi
+
+#if there a 3rd param, it may be shuffle being requested
+if [ $# -eq 3 ]; then
+	if [ "$3" = "s" ]; then
+  shuffle=true
+#echo"Shuffling Music"
+fi
+fi 
+
 
 # saving the folderpath for easier use
 folderpath=`pwd`;
@@ -111,20 +130,6 @@ playyoutube() {
 		playmp3ffmpeg "$rawURL" $2
 	done
 }
-#playsoundcloud() {
-#	# I ALSO WANNA STREAM SOUNDCLOUD to PIFM!!
-#	echo "cant do this, yet."
-#}
-
-#playfromvlc() {
-#	vlc "$1" vlc://quit --intf=dummy --no-sout -smem-time-sync --sout='#transcode{acodec=s16l,ab=32,samplerate=44100,channels=1}:std{access=file,mux=dummy,dst=-}' > /tmp/vlcradio &;
-#	sudo $pifmplayfolder/pifm /tmp/vlcradio $2 44100;
-#}
-
-#hijackaudioout() {
-#	# I know there is a way to redirect / pipe all audio out into pifm, but i dont understand it yet. will read!
-#	echo "cant do this, yet."
-#}
 
 playmp3() {
   #echo "DEBUG: playmp3"
@@ -139,10 +144,17 @@ playfile() {
 	idtagalbum=$(ffprobe -loglevel error -show_entries format_tags=album -of default=noprint_wrappers=1:nokey=1 "$1");
 	idtagtrack=$(ffprobe -loglevel error -show_entries format_tags=track -of default=noprint_wrappers=1:nokey=1 "$1");
 	#idtagduration=$(ffprobe -loglevel error -show_entries format_tags=Duration -of default=noprint_wrappers=1:nokey=1 "$1");
-	#echo "DEBUG: playfile"
-	echo "Playing on frequency $2"
+	#echo "DEBUG: playfile
+	
+	#Start displaying idtag info
+	#eg. Daft Punk - One More Time
+	if [ $shuffle = true ]; then
+        echo "Shuffling on Freq: $2"
+        else
+	echo "Playing on Freq: $2"
+	fi
 	echo "$idtagartist - $idtagalbum"
-	echo "($idtagtrack) - $idtagtitle"
+	echo "($idtagtrack) $idtagtitle"
 	#echo "$idtagtitle"
 	# add filetype validation here...
 
@@ -173,9 +185,9 @@ playfile() {
 
 # method to loop through all elements in a folder, then try to play it
 playfolder() {
-	# could and should be recursive, but meh.
-	#echo "DEBUG: playfolder"
-	#this should play all the files in the folder
+#could and should be recursive, but meh.
+#echo "DEBUG: playfolder"
+#this should play all the files in the folder
 	while :
 	do
 	for file in "$1"/*;
@@ -185,6 +197,24 @@ playfolder() {
 	}
 	done
 	done
+}
+
+# shuffles a folders files to play
+playfoldershuffle() {
+#echo "DEBUG: playfoldershuffle"
+#this should play all the files in the folder
+while :
+do
+
+ls "$1" |sort -R |tail -$N |while read file; do
+playit "$1/$file" $2
+    # Something involving $file, or you can leave
+    # off the while to just get the filenames
+done
+done
+
+
+
 }
 
 playurl() {
@@ -203,13 +233,19 @@ playurl() {
 }
 
 playit() {
-	if [ -d "$1" ]; then
-		#echo "DEBUG: its a folder!"
-		# if the thing is a directory, play all files in that directory
-		playfolder "$1" $2
-	elif [ -f "$1" ]; then
-		#echo "DEBUG: its a file!"
-		# its a file.. try to play it!
+#echo "playing $1"
+ 	if [ -d "$1" ]; then
+ 		#echo "DEBUG: its a folder!"
+ 		# if the thing is a directory, play all files in that directory
+	if [ $shuffle = true ]; then
+	#echo "DEBUG: playing shuffled as requested"
+		playfoldershuffle "$1" $2
+	else
+ 		playfolder "$1" $2
+		fi
+ 	elif [ -f "$1" ]; then
+ 	#	echo "DEBUG: its a file!"
+ 		# its a file.. try to play it!
 		playfile "$1" $2
 	elif echo "$1"|grep -q '://'; then
 		echo "DEBUG: its an URL!"
@@ -217,11 +253,12 @@ playit() {
 	elif [ "$1" = "PIPE" ]; then
 		playpipe "$1" $2
 	else
-		echo "Unkown Error"
+		echo "DEBUG: its something else!"
 		# its not a directory, and its not a file.. :P
-		echo "PiFMPlay cant play that filetype"
+		echo "PiFMPlay cant play that, sorry :("
 	fi
 }
+
 
 # And now we run it!! ;)
 # if its given one of the control commands as first parameter, do it to it
