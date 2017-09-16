@@ -25,7 +25,6 @@ folderpath=`pwd`;
 # the folder pifmplay is in. (the folder the script runs from)
 pifmplayfolder=$(dirname $0);
 
-
 # echo "Broadcast Frequency = $frequency";
 # this is what pifmplay is asked to play
 thingtoplay=$1;
@@ -89,13 +88,13 @@ playpipe() {
 }
 
 playmp3ffmpeg() {
-  echo "DEBUG: playmp3ffmpeg"
+  #echo "DEBUG: playmp3ffmpeg"
   # ffmpeg converts the mp3 file to a wav stream, that stream is piped to pifm, pifm then transmits it over fm-radio via gpio 4
   ffmpeg -i "$1" -f s16le -ar 22.05k -ac 1 - | sudo $pifmplayfolder/pifm - $2
 }
 
 playmp3sox() {
-  echo "DEBUG: playmp3sox"
+  #echo "DEBUG: playmp3sox"
   # sox converts the mp3 file to a wav stream, that stream is piped to pifm, pifm then transmits it over fm-radio via gpio 4
   sox -v .9 -t mp3 "$1" -t wav --input-buffer 80000 -r 22050 -c 1 - | sudo $pifmplayfolder/pifm - $2
 }
@@ -128,15 +127,18 @@ playyoutube() {
 #}
 
 playmp3() {
-  echo "DEBUG: playmp3"
+  #echo "DEBUG: playmp3"
   #default is sox, just because it has less output :P
   playmp3sox "$1" $2
 }
 
 # method to call on a file
 playfile() {
-	echo "DEBUG: playfile"
-	echo "PiFMPlaying: file $1, frequency $2"
+        idtagartist=$(ffprobe -loglevel error -show_entries format_tags=artist -of default=noprint_wrappers=1:nokey=1 "$1");
+	idtagtitle=$(ffprobe -loglevel error -show_entries format_tags=title -of default=noprint_wrappers=1:nokey=1 "$1");
+	#echo "DEBUG: playfile"
+	echo "Playing | Frequency $2"
+	echo "$idtagartist - $idtagtitle"
 	# add filetype validation here...
 
 	if echo "$1" | grep -q '.wav$'; then
@@ -146,13 +148,13 @@ playfile() {
 	elif echo "$1" | grep -q '.m4a$'; then
 		playm4a "$1" $2
 	else
-		echo "Uhm, yeah. I probably can't play that, but i will try"
+		echo "Unkown Error, trying to play file."
 		playmp3ffmpeg "$1" $2
 	fi
 	#if [ $file = "*.mp3" ]; then
 	#	playmp3 "$1" $2
 	#elif [ $file = "*.m4a" ]; then
-	#	# its a mpeg4 audio file
+	#	#its a mpeg4 audio file
 	#	playm4a "$1" $2	
 	#elif [ $file = "*.wav" ];then
 	#	# its a wav play it!
@@ -167,11 +169,11 @@ playfile() {
 # method to loop through all elements in a folder, then try to play it
 playfolder() {
 	# could and should be recursive, but meh.
-	echo "DEBUG: playfolder"
+	#echo "DEBUG: playfolder"
 	#this should play all the files in the folder
 	while :
 	do
-	for file in $1/*;
+	for file in "$1"/*;
 	do
 	{
 		playit "$file" $2
@@ -197,11 +199,11 @@ playurl() {
 
 playit() {
 	if [ -d "$1" ]; then
-		echo "DEBUG: its a folder!"
+		#echo "DEBUG: its a folder!"
 		# if the thing is a directory, play all files in that directory
 		playfolder "$1" $2
 	elif [ -f "$1" ]; then
-		echo "DEBUG: its a file!"
+		#echo "DEBUG: its a file!"
 		# its a file.. try to play it!
 		playfile "$1" $2
 	elif echo "$1"|grep -q '://'; then
@@ -210,9 +212,9 @@ playit() {
 	elif [ "$1" = "PIPE" ]; then
 		playpipe "$1" $2
 	else
-		echo "DEBUG: its something else!"
+		echo "Unkown Error"
 		# its not a directory, and its not a file.. :P
-		echo "PiFMPlay cant play that, sorry :("
+		echo "PiFMPlay cant play that filetype"
 	fi
 }
 
