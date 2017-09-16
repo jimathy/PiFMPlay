@@ -136,9 +136,14 @@ playmp3() {
 playfile() {
         idtagartist=$(ffprobe -loglevel error -show_entries format_tags=artist -of default=noprint_wrappers=1:nokey=1 "$1");
 	idtagtitle=$(ffprobe -loglevel error -show_entries format_tags=title -of default=noprint_wrappers=1:nokey=1 "$1");
+	idtagalbum=$(ffprobe -loglevel error -show_entries format_tags=album -of default=noprint_wrappers=1:nokey=1 "$1");
+	idtagtrack=$(ffprobe -loglevel error -show_entries format_tags=track -of default=noprint_wrappers=1:nokey=1 "$1");
+	#idtagduration=$(ffprobe -loglevel error -show_entries format_tags=Duration -of default=noprint_wrappers=1:nokey=1 "$1");
 	#echo "DEBUG: playfile"
-	echo "Playing | Frequency $2"
-	echo "$idtagartist - $idtagtitle"
+	echo "Playing on frequency $2"
+	echo "$idtagartist - $idtagalbum"
+	echo "($idtagtrack) - $idtagtitle"
+	#echo "$idtagtitle"
 	# add filetype validation here...
 
 	if echo "$1" | grep -q '.wav$'; then
